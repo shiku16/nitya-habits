@@ -167,6 +167,8 @@ Widget buildHabitTile(Habit habit) {
           ),
           const SizedBox(height: 4),
           buildBadge(habit.streak),
+          const SizedBox(height: 6),
+          buildStreakProgress(habit.streak),
         ],
       ),
       trailing: TweenAnimationBuilder<double>(
@@ -452,3 +454,107 @@ void _showBadgeUnlocked(BuildContext context, String title, String emoji) {
     ),
   );
 }
+Widget buildStreakProgress(int streak) {
+  const milestones = [3, 7, 21];
+  final next = milestones.firstWhere(
+    (m) => streak < m,
+    orElse: () => milestones.last,
+  );
+
+  final progress = (streak / next).clamp(0.0, 1.0);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '🔥 $streak / $next day streak',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 6),
+      LinearProgressIndicator(
+        value: progress,
+        minHeight: 8,
+        backgroundColor: Colors.grey.shade300,
+        valueColor: const AlwaysStoppedAnimation(Colors.orange),
+      ),
+    ],
+  );
+}
+Widget badgeTile({
+  required String title,
+  required String emoji,
+  required bool unlocked,
+}) {
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: unlocked ? Colors.orange.shade50 : Colors.grey.shade200,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        Text(
+          unlocked ? emoji : '🔒',
+          style: const TextStyle(fontSize: 26),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: unlocked ? Colors.black : Colors.grey,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+class BadgesScreen extends StatelessWidget {
+  const BadgesScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeBox = Hive.box<app_badge.Badge>('badges');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('🏆 Achievements'),
+      ),
+      body: ValueListenableBuilder(
+        valueListenable: badgeBox.listenable(),
+        builder: (context, Box<app_badge.Badge> box, _) {
+          if (box.isEmpty) {
+            return const Center(
+              child: Text(
+                'No badges yet',
+                style: TextStyle(fontSize: 16),
+              ),
+            );
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: box.values.map((b) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: badgeTile(
+                  title: b.title,
+                  emoji: getBadgeEmoji(b.title),
+                  unlocked: box.containsKey(b.id),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+}
+String getBadgeEmoji(String title) {
+  if (title.contains('3')) return '🔥';
+  if (title.contains('7')) return '🏆';
+  if (title.contains('21')) return '💎';
+  return '🏅';
+}
+
