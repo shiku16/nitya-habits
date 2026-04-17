@@ -251,7 +251,9 @@ Widget build(BuildContext context) {
     valueListenable: habitBox.listenable(),
     builder: (context, Box<Habit> box, _) {
       if (box.isEmpty) {
-        return _buildEmptyState();
+        return Center(
+          child: _buildEmptyState(),
+        );
       }
 
       return Column(
@@ -278,13 +280,20 @@ Widget build(BuildContext context) {
 
                     habitBox.delete(deletedKey);
 
+                    // Clear any existing SnackBars to prevent stacking
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text('Habit deleted'),
+                        duration: const Duration(seconds: 3),
                         action: SnackBarAction(
                           label: 'UNDO',
+                          textColor: Colors.green,
                           onPressed: () {
                             habitBox.put(deletedKey, deletedHabit);
+                            // Hide the SnackBar after undo
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           },
                         ),
                       ),
@@ -511,7 +520,7 @@ Widget badgeTile({
   );
 }
 class BadgesScreen extends StatelessWidget {
-  const BadgesScreen({Key? key}) : super(key: key);
+  const BadgesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
